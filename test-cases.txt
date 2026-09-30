@@ -1,0 +1,263 @@
+=====================================================================
+TEST CASES - https://automationintesting.online/
+Part 1: Manual testing & test documentation
+=====================================================================
+Automated in:  cypress/e2e/user-spec.cy.js       (UI  - TC-UI-01 ... TC-UI-08, TC-UI-10 ... TC-UI-15)
+               cypress/e2e/admin-spec.cy.js      (API - TC-API-01 ... TC-API-09)
+               python/tests/test_ui_booking.py   (UI  - TC-UI-01 ... TC-UI-08, TC-UI-10 ... TC-UI-15)
+               python/tests/test_api_rooms.py    (API - TC-API-01 ... TC-API-09)
+Manual only:   TC-UI-09 (calendar mouse-drag; its booking flow is automated in TC-UI-01)
+Known defects: BUG-01, BUG-02, BUG-03 (BUG-03: the calendar drawing of TC-UI-08 is automated as
+               a known-bug test - xfail in pytest, pending in Cypress unless RUN_KNOWN_BUGS is set)
+
+Environments / accounts
+  User App : https://automationintesting.online/          (no login needed)
+  Admin    : https://automationintesting.online/admin     login: admin / password
+             (the task gives https://automationintesting.online/#/admin - same admin panel)
+  Note     : the site is a shared demo, its data is reset periodically.
+
+Field rules used in the test data (from the booking / room services)
+  Firstname : required, 3-18 characters
+  Lastname  : required, 3-30 characters
+  Email     : required, well-formed e-mail address
+  Phone     : required, 11-21 characters
+  Dates     : check-in must be before check-out; already booked dates cannot be booked again
+  Room type : Single | Double | Twin | Family | Suite;  price 1-999
+
+Common test data
+  VALID   : Firstname=John, Lastname=Tester, Email=john.tester@example.com, Phone=01234567890
+  ROOM    : at least one room exists (automation creates its own room through the Admin API)
+
+Common preconditions (all UI cases)
+  P1. Browser is open, the User App is reachable.
+  P2. A room exists. Its reservation page is opened from the home page with the button
+      "Book now" (URL: /reservation/{roomid}?checkin=YYYY-MM-DD&checkout=YYYY-MM-DD).
+      The calendar shows the selected days as a "Selected" bar.
+
+=====================================================================
+UI TEST CASES (User App - room booking flow)
+=====================================================================
+
+---------------------------------------------------------------------
+TC-UI-01  Room can be booked with valid data                [Positive]
+Priority: High     Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Steps:
+  1. Open the reservation page of the room (P2) with dates in the future, e.g. 3 nights.
+  2. Click "Reserve Now" under the calendar. -> "Book This Room" form is shown.
+  3. Enter VALID data: Firstname, Lastname, Email, Phone.
+  4. Click "Reserve Now" in the form.
+Expected:
+  - POST /api/booking is sent with the entered data and the selected dates, response 201.
+  - Card "Booking Confirmed" is shown with text "<checkin> - <checkout>".
+  - Admin API shows exactly one booking for this room with the same name and dates.
+
+---------------------------------------------------------------------
+TC-UI-02  Booking with all fields empty                     [Negative]
+Priority: High     Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Steps: open reservation page -> "Reserve Now" -> leave ALL fields empty -> "Reserve Now".
+Expected:
+  - POST /api/booking returns 400 with a non-empty "errors" list.
+  - Red alert with a list of validation messages is shown, the form stays open.
+  - "Booking Confirmed" is NOT shown, no booking is stored.
+
+---------------------------------------------------------------------
+TC-UI-03  Firstname shorter than the minimum                [Negative]
+Priority: Medium   Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Firstname = "Jo" (2 chars), other fields valid.
+Expected: 400, message "size must be between 3 and 18", no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-04  Invalid e-mail format                             [Negative]
+Priority: Medium   Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Email = "not-an-email", other fields valid.
+Expected: 400, message about a well-formed e-mail address, no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-05  Phone number too short                            [Negative]
+Priority: Medium   Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Phone = "123", other fields valid.
+Expected: 400, message "size must be between 11 and 21", no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-06  Lastname empty                                    [Negative]
+Priority: Medium   Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Lastname = "" (empty), other fields valid.
+Expected: 400, validation message for Lastname, no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-07  Booking without selecting dates                   [Negative]
+Priority: High     Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Steps: open /reservation/{roomid} WITHOUT the checkin / checkout parameters.
+Expected:
+  - The booking form cannot be reached: no "Reserve Now" button, no form fields.
+  - "Booking Confirmed" is not shown, no booking is stored.
+Actual behaviour (see BUG-01): the calendar card shows a spinner that never disappears.
+
+---------------------------------------------------------------------
+TC-UI-08  Earlier booked dates are shown as "Unavailable"   [Positive]
+Priority: High     Automated: user-spec.cy.js, test_ui_booking.py
+          (3 automated checks: calendar feed, calendar drawing "Unavailable", "cannot be booked
+           again". The calendar drawing fails because of BUG-03, so it is marked as a known bug:
+           xfail in pytest, pending in Cypress - run it with CYPRESS_RUN_KNOWN_BUGS=true)
+---------------------------------------------------------------------
+Precondition: a booking exists for the room, e.g. the 20th-22nd of NEXT month.
+Steps:
+  1. Open the reservation page of that room (with any other selection of dates).
+  2. Click "Next" in the calendar toolbar to go to the month with the booking.
+Expected:
+  - The booked days are shown on the calendar as "Unavailable".
+  - GET /api/report/room/{roomid} (used by the calendar) returns one entry:
+    title "Unavailable", start = check-in, end = check-out.
+  - Trying to book the same dates again through the UI is rejected (409), nothing is stored.
+Actual (2026-09-28): the feed is correct and the booking is rejected, but the calendar does NOT
+  draw the booked days (see BUG-03).
+
+---------------------------------------------------------------------
+TC-UI-09  Room can be booked after selecting dates on the calendar   [Positive]
+Priority: Medium   Automated: NO - manual test case only
+          (react-big-calendar mouse-drag selection cannot be reproduced reliably with
+           synthetic events; the same flow is automated in TC-UI-01 with preselected dates
+           in the URL, exactly as the "Book now" button builds it)
+---------------------------------------------------------------------
+Steps:
+  1. Open the reservation page, click "Next" (next month).
+  2. Drag the mouse over several free days (e.g. 2nd-4th day of the 3rd week).
+     -> the "Selected" bar moves to the dragged days.
+  3. "Reserve Now" -> fill VALID data -> "Reserve Now".
+Expected:
+  - 201 and "Booking Confirmed"; the confirmed dates are the dragged dates
+    (check-in = first dragged day) and equal the booking seen by the Admin API.
+
+---------------------------------------------------------------------
+TC-UI-10  "Book now" on the home page opens the reservation page   [Positive]
+Priority: Low      Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Steps: open the home page -> click "Book now" on the first room card.
+Expected:
+  - GET /api/room returns 200 (rooms are loaded).
+  - Link contains ?checkin=YYYY-MM-DD&checkout=YYYY-MM-DD; the reservation page opens
+    and the calendar with "Reserve Now" is displayed.
+
+---------------------------------------------------------------------
+TC-UI-11  Email missing @ symbol                          [Negative]
+Priority: Low      Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Email = "userexample.com" (missing @), other fields valid.
+Expected: 400, validation error for email format, no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-12  Email missing domain                            [Negative]
+Priority: Low      Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Email = "user@" (missing domain), other fields valid.
+Expected: 400, validation error for email format, no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-13  Phone number too long (22 chars, max is 21)     [Negative]
+Priority: Low      Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Phone = "0123456789012345678901" (22 chars), other fields valid.
+Expected: 400, message "size must be between 11 and 21", no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-14  Firstname too long (19 chars, max is 18)       [Negative]
+Priority: Low      Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Firstname = "JohnDoeSmithJonesAb" (19 chars), other fields valid.
+Expected: 400, validation error for Firstname length, no confirmation, no booking.
+
+---------------------------------------------------------------------
+TC-UI-15  Lastname too long (31 chars, max is 30)        [Negative]
+Priority: Low      Automated: user-spec.cy.js, test_ui_booking.py
+---------------------------------------------------------------------
+Data: Lastname = "TesterSmithJonesBrownWhiteBlack" (31 chars), other fields valid.
+Expected: 400, validation error for Lastname length, no confirmation, no booking.
+
+=====================================================================
+API TEST CASES (Admin API + User API)
+=====================================================================
+Authentication: POST /api/auth/login {"username":"admin","password":"password"}
+  -> 200 {"token": "..."}.  The token is sent as header  Cookie: token=<token>
+  to every admin-only call. User calls are sent without any token.
+
+TC-API-01  Create room (Admin API) -> verify in User API
+  Steps   : login; POST /api/room; GET /api/room (no token).
+  Expected: create returns 2xx; the new room is in the list with the same name, type,
+            accessible flag, price, description and features.
+
+TC-API-02  Book room (User API) -> verify in Admin API
+  Steps   : POST /api/booking (no token); login; GET /api/booking?roomid={id};
+            GET /api/report/room/{id} (no token).
+  Expected: 201 on booking; admin sees exactly this booking (names, check-in, check-out);
+            the report lists the dates as "Unavailable".
+
+TC-API-03  Edit room (Admin API) -> verify in User API
+  Steps   : PUT /api/room/{id} (type, price, accessible, description, features changed);
+            GET /api/room (no token).
+  Expected: 200/202 on update; the user sees all updated values.
+
+TC-API-04  Delete room (Admin API) -> verify in User API
+  Steps   : DELETE /api/room/{id}; GET /api/room (no token).
+  Expected: 200/202/204 on delete; the room id is absent from the list.
+
+TC-API-05  Create / edit / delete room without authorisation        [Negative]
+  Steps   : without a token: POST /api/room, PUT /api/room/{id}, DELETE /api/room/{id}.
+  Expected: 401 (or 403) for each call; the existing room is unchanged.
+
+TC-API-06  Book room with invalid data                              [Negative]
+  Data    : invalid email; firstname "Jo"; empty lastname; phone "123"; no dates.
+  Expected: 400 with "errors" (400, 409 or 500 when the dates are missing - see OBS-06); no booking is stored.
+            Each invalid value is sent in its own request.
+
+TC-API-07  Home page loads rooms from GET /api/room (cy.intercept in Cypress, page.expect_response in TC-UI-10)
+  Expected: intercepted request returns 200, body.rooms is a non-empty array and
+            contains the room created through the Admin API.
+
+TC-API-08  The same dates cannot be booked twice                    [Negative]
+  Steps   : book dates; book the same dates again; book overlapping dates.
+  Expected: 201, then 409 and 409; the admin still sees exactly one booking.
+
+TC-API-09  Wrong credentials / anonymous access                     [Negative]
+  Expected: login with a wrong password -> 401 (or 403);
+            GET /api/booking?roomid={id} without token -> 401 (or 403).
+
+=====================================================================
+FINDINGS (defects / observations discovered while preparing the tests)
+=====================================================================
+BUG-01  Reservation page without dates shows an endless spinner.
+        Opening /reservation/{id} without ?checkin&checkout never renders the calendar
+        (the page waits for a selection that nobody can make). TC-UI-07 documents this.
+BUG-02  React hydration error (#418) in the browser console on page load.
+        The page still works; the error is ignored by the test support file, all other
+        uncaught application errors still fail a test.
+BUG-03  Calendar does not show earlier booked dates as "Unavailable" (observed on 2026-09-28).
+        GET /api/report/room/{id} returns [{start:"2026-10-20", end:"2026-10-22",
+        title:"Unavailable"}] (200), but on /reservation/{id}?checkin=..&checkout=.. the
+        calendar (September -> Next -> October) draws only the "Selected" range. The word
+        "Unavailable" is not present anywhere in the DOM, no other event / background event
+        exists, and reloading the page 3 times gives the same result (not a timing issue).
+        Expected: booked days are marked as Unavailable. The check is automated in TC-UI-08
+        (part 3) as a known-bug test: it is expected to fail (xfail / pending) and turns
+        XPASS in pytest as soon as the application is fixed.
+OBS-01  The home page lists only the first 3 rooms, so tests open a room by its URL.
+OBS-02  "Price Summary" counts the selected DAYS as nights (a 3-day drag shows "x 3 nights").
+OBS-03  Response codes differ between the public gateway and the room service
+        (PUT/DELETE answer 200 on the site, 202 in the service; unauthenticated calls
+        answer 401 on the site, 403 in the service), so the API tests accept both.
+OBS-04  Read from the source code: when the booking API answers 409
+        (dates already taken) the gateway returns no "errors" list and the booking form
+        reads ".length" of undefined - the page most likely crashes instead of showing a
+        message. Covered on API level by TC-API-08; the UI path is exercised by TC-UI-08
+        ("cannot be booked again"), where Cypress ignores the uncaught error on purpose.
+OBS-05  GET /api/report/room/{id} answers { "report": [ {start, end, title} ] } (an object),
+        not a bare array; the tests read both shapes.
+OBS-06  POST /api/booking without "bookingdates" answers 500 {"errors":["Failed to create booking"]}
+        on the live site (a server error instead of a 400 validation error). The booking is
+        not created, which is what TC-API-06 verifies; 400/409/500 are accepted.

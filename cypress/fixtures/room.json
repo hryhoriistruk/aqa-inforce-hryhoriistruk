@@ -1,0 +1,8 @@
+{
+  "type": "Double",
+  "accessible": true,
+  "description": "Automated test room with a nice view and a comfortable bed.",
+  "image": "https://www.mwtestconsultancy.co.uk/img/room1.jpg",
+  "roomPrice": 150,
+  "features": ["WiFi", "Safe"]
+}

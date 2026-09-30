@@ -1,0 +1,31 @@
+name: Cypress CI
+
+on:
+  push:
+    branches: [main, develop, working]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome
+          install-command: npm ci
+          working-directory: aqa-inforce-hryhoriistruk9
+
+      - name: Upload screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: aqa-inforce-hryhoriistruk9/cypress/screenshots
+          if-no-files-found: ignore
+
