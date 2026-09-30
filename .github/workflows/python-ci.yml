@@ -23,29 +23,29 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
-          cache-dependency-path: aqa-inforce-hryhoriistruk/python/requirements.txt
+          cache-dependency-path: python/requirements.txt
 
       - name: Install dependencies
-        working-directory: ./aqa-inforce-hryhoriistruk/python
+        working-directory: ./python
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
       - name: flake8
-        working-directory: ./aqa-inforce-hryhoriistruk/python
+        working-directory: ./python
         run: flake8 .
 
       - name: black
-        working-directory: ./aqa-inforce-hryhoriistruk/python
+        working-directory: ./python
         run: black --check .
 
       - name: isort
-        working-directory: ./aqa-inforce-hryhoriistruk/python
+        working-directory: ./python
         run: isort --check-only .
 
       - name: pytest
-        working-directory: ./aqa-inforce-hryhoriistruk/python
+        working-directory: ./python
         env:
           BASE_URL: https://automationintesting.online
         run: |
@@ -62,7 +62,7 @@ jobs:
         with:
           name: pytest-report-py${{ matrix.python-version }}
           path: |
-            aqa-inforce-hryhoriistruk/python/reports
-            aqa-inforce-hryhoriistruk/python/allure-results
+            python/reports
+            python/allure-results
           if-no-files-found: warn
 

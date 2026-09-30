@@ -12,8 +12,8 @@
   or a comment) and every change of behaviour must be reflected there.
 - Tests must be independent: create your own room, delete it (and its bookings) in cleanup.
 - Python style: `flake8 .`, `black .`, `isort .` (run in `python`); pre-commit hooks are in
-  `../../aqa-inforce-hryhoriistruk1/.pre-commit-config.yaml`.
-- Cypress style: keep helpers in `../../aqa-inforce-hryhoriistruk1/cypress/support/commands.js`, test data in fixtures.
+  `.pre-commit-config.yaml`.
+- Cypress style: keep helpers in `cypress/support/commands.js`, test data in fixtures.
 
 ## Pull requests
 

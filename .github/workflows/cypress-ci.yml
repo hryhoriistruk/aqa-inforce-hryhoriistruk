@@ -19,13 +19,12 @@ jobs:
         with:
           browser: chrome
           install-command: npm ci
-          working-directory: aqa-inforce-hryhoriistruk
 
       - name: Upload screenshots
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: cypress-screenshots
-          path: aqa-inforce-hryhoriistruk/cypress/screenshots
+          path: cypress/screenshots
           if-no-files-found: ignore
 

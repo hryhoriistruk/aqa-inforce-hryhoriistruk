@@ -18,10 +18,10 @@ The same test cases (`test-cases.txt`) are automated twice:
 | What | File | Location |
 |---|---|---|
 | Manual test cases (UI + API), defects and observations | `test-cases.txt` | repository root |
-| UI automation - Cypress (TC-UI-01…08, TC-UI-10…15) | `user-spec.cy.js` | `../../aqa-inforce-hryhoriistruk1/cypress/e2e` |
-| API automation - Cypress (TC-API-01…09) | `admin-spec.cy.js` | `../../aqa-inforce-hryhoriistruk1/cypress/e2e` |
-| UI automation - Playwright (TC-UI-01…08, TC-UI-10…15) | `test_ui_booking.py` | `../../aqa-inforce-hryhoriistruk1/python/tests` |
-| API automation - pytest (TC-API-01…09) | `test_api_rooms.py` | `../../aqa-inforce-hryhoriistruk1/python/tests` |
+| UI automation - Cypress (TC-UI-01…08, TC-UI-10…15) | `user-spec.cy.js` | `cypress/e2e` |
+| API automation - Cypress (TC-API-01…09) | `admin-spec.cy.js` | `cypress/e2e` |
+| UI automation - Playwright (TC-UI-01…08, TC-UI-10…15) | `test_ui_booking.py` | `python/tests` |
+| API automation - pytest (TC-API-01…09) | `test_api_rooms.py` | `python/tests` |
 
 Manual only: TC-UI-09 (calendar mouse-drag; the same booking flow is automated in TC-UI-01).
 Known application defects are described in `test-cases.txt` (BUG-01…03 and OBS-01…06).
@@ -56,7 +56,7 @@ npm run cy:open
 CYPRESS_RUN_KNOWN_BUGS=true npm run test:ui   
 ```
 
-Base URL and admin credentials are set in `../../aqa-inforce-hryhoriistruk1/cypress.config.js` and can be overridden, e.g.
+Base URL and admin credentials are set in `cypress.config.js` and can be overridden, e.g.
 `CYPRESS_BASE_URL=... CYPRESS_apiUrl=... npm test`.
 
 ## Python (Playwright + pytest)

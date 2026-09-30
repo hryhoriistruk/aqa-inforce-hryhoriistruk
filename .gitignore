@@ -16,7 +16,7 @@ ENV/
 .env
 .env.local
 .env.*.local
-../../aqa-inforce-hryhoriistruk1/python/.env
+python/.env
 
 .pytest_cache/
 .coverage
@@ -28,9 +28,9 @@ coverage.xml
 .mypy_cache/
 .ruff_cache/
 
-../../aqa-inforce-hryhoriistruk1/python/reports/
-../../aqa-inforce-hryhoriistruk1/python/pytest_report.txt
-../../aqa-inforce-hryhoriistruk1/python/allure-results/
+python/reports/
+python/pytest_report.txt
+python/allure-results/
 allure-report/
 allure-results/
 
@@ -42,10 +42,10 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-../../aqa-inforce-hryhoriistruk1/cypress/screenshots/
-../../aqa-inforce-hryhoriistruk1/cypress/videos/
-../../aqa-inforce-hryhoriistruk1/cypress/downloads/*
-!../../aqa-inforce-hryhoriistruk1/cypress/downloads/.gitkeep
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/*
+!cypress/downloads/.gitkeep
 cypress.env.json
 
 .idea/
