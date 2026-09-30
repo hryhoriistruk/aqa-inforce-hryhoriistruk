@@ -13,7 +13,6 @@ describe('API – Admin & User flows for rooms', () => {
   });
 
   afterEach(() => {
-
     createdRoomIds.splice(0).forEach((id) => cy.adminDeleteRoom(id));
   });
 
@@ -131,7 +130,7 @@ describe('API – Admin & User flows for rooms', () => {
         expect(AUTH_ERRORS).to.include(res.status);
       });
 
-      
+
       cy.userGetRooms().then((rooms) => {
         const found = rooms.find((r) => r.roomid === room.roomid);
         expect(found, 'room still exists').to.exist;
