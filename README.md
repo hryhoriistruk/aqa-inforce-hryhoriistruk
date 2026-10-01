@@ -65,7 +65,6 @@ Requirements: Python 3.9+ (CI runs the suite on 3.9, 3.10, 3.11 and 3.12).
 
 ```bash
 cd python
-python -m venv .venv
 source .venv/bin/activate        
 pip install -r requirements.txt
 playwright install chromium
